@@ -1,0 +1,263 @@
+-- Creación de la base de datos
+CREATE DATABASE IF NOT EXISTS keymaster_db;
+USE keymaster_db;
+
+-- Tabla de usuarios
+CREATE TABLE users (
+  user_id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(100) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  role ENUM('administrador', 'profesor') NOT NULL,
+  phone VARCHAR(20),
+  employee_id VARCHAR(50),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE docentes (
+  docente_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNIQUE,
+  nombre VARCHAR(100),
+  primer_apellido VARCHAR(100),
+  segundo_apellido VARCHAR(100),
+  ci VARCHAR(20) UNIQUE,
+  email VARCHAR(100) UNIQUE,
+  telefono VARCHAR(20),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE gestiones (
+  gestion_id INT AUTO_INCREMENT PRIMARY KEY,
+  anio INT NOT NULL,
+  semestre ENUM('1', '2') NOT NULL,
+  descripcion VARCHAR(100),
+  activo BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- Tabla de edificios
+CREATE TABLE buildings (
+  building_id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  location VARCHAR(255),
+  floors INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Tabla de aulas (cambiado has_computer a has_computers)
+CREATE TABLE classrooms (
+  classroom_id INT AUTO_INCREMENT PRIMARY KEY,
+  building_id INT NOT NULL,
+  number VARCHAR(20) NOT NULL,
+  floor VARCHAR(10) NOT NULL,
+  capacity INT,
+  has_projector BOOLEAN DEFAULT FALSE,
+  has_computers BOOLEAN DEFAULT FALSE,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (building_id) REFERENCES buildings(building_id),
+  UNIQUE KEY (building_id, number)
+);
+
+-- Tabla de claves
+CREATE TABLE key_aula (
+  key_id INT AUTO_INCREMENT PRIMARY KEY,
+  classroom_id INT NOT NULL,
+  codigo_clave VARCHAR(50) NOT NULL,
+  estado ENUM('disponible', 'prestada', 'perdida', 'mantenimiento') DEFAULT 'disponible',
+  has_data_control BOOLEAN DEFAULT FALSE,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (classroom_id) REFERENCES classrooms(classroom_id)
+);
+
+-- Tabla de asignaturas
+CREATE TABLE subjects (
+  subject_id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  code VARCHAR(20),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Tabla de horarios (eliminados semester y academic_year)
+CREATE TABLE schedules (
+  schedule_id INT AUTO_INCREMENT PRIMARY KEY,
+  subject_id INT NOT NULL,
+  classroom_id INT NOT NULL,
+  user_id INT NOT NULL,
+  gestion_id INT NOT NULL, -- nueva columna
+  day_of_week ENUM('Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo') NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (subject_id) REFERENCES subjects(subject_id),
+  FOREIGN KEY (classroom_id) REFERENCES classrooms(classroom_id),
+  FOREIGN KEY (user_id) REFERENCES users(user_id),
+  FOREIGN KEY (gestion_id) REFERENCES gestiones(gestion_id)
+);
+
+
+-- Tabla de solicitudes de llaves
+CREATE TABLE key_requests (
+  request_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT,
+  classroom_id INT NOT NULL,
+  schedule_id INT,
+  needs_data_control BOOLEAN DEFAULT FALSE,
+  estado ENUM('pendiente', 'aprobada', 'completada', 'rechazada') DEFAULT 'pendiente',
+  request_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  approval_time TIMESTAMP NULL,
+  return_time TIMESTAMP NULL,
+  approved_by INT,
+  notes TEXT,
+  FOREIGN KEY (user_id) REFERENCES users(user_id),
+  FOREIGN KEY (classroom_id) REFERENCES classrooms(classroom_id),
+  FOREIGN KEY (schedule_id) REFERENCES schedules(schedule_id),
+  FOREIGN KEY (approved_by) REFERENCES users(user_id)
+);
+
+-- Tabla para préstamos externos (eliminados id_document y id_photo_url)
+CREATE TABLE external_loans (
+  loan_id INT AUTO_INCREMENT PRIMARY KEY,
+  person_name VARCHAR(100) NOT NULL,
+  tipo_persona ENUM('invitado', 'otro') NOT NULL,
+  classroom_id INT NOT NULL,
+  key_id INT NOT NULL,
+  reason TEXT NOT NULL,
+  loan_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  expected_return_time TIMESTAMP,
+  actual_return_time TIMESTAMP NULL,
+  registered_by INT NOT NULL,
+  estado ENUM('prestada', 'devuelta', 'vencida') DEFAULT 'prestada',
+  notes TEXT,
+  FOREIGN KEY (classroom_id) REFERENCES classrooms(classroom_id),
+  FOREIGN KEY (key_id) REFERENCES key_aula(key_id),
+  FOREIGN KEY (registered_by) REFERENCES users(user_id)
+);
+
+-- Tabla de historial de acceso
+CREATE TABLE access_logs (
+  log_id INT AUTO_INCREMENT PRIMARY KEY,
+  key_id INT NOT NULL,
+  user_id INT,
+  external_loan_id INT,
+  accion ENUM('prestada', 'devuelta') NOT NULL,
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  notes TEXT,
+  FOREIGN KEY (key_id) REFERENCES key_aula(key_id),
+  FOREIGN KEY (user_id) REFERENCES users(user_id),
+  FOREIGN KEY (external_loan_id) REFERENCES external_loans(loan_id)
+);
+
+-- Tabla de notificaciones
+CREATE TABLE notifications (
+  notification_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  title VARCHAR(100) NOT NULL,
+  message TEXT NOT NULL,
+  tipo ENUM('informacion', 'advertencia', 'exito', 'error') DEFAULT 'informacion',
+  is_read BOOLEAN DEFAULT FALSE,
+  action_url VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id)
+); 
+
+-- MODIFICACIONES DE LA BDD
+ALTER TABLE buildings DROP COLUMN location;
+ALTER TABLE buildings DROP COLUMN floors;
+
+ALTER TABLE classrooms DROP COLUMN floor;
+ALTER TABLE classrooms DROP COLUMN notes;
+
+
+-- 1. Renombrar columna 'nombre' a 'nombres'
+ALTER TABLE docentes CHANGE nombre nombres VARCHAR(100) NOT NULL;
+-- 2. Eliminar columna 'ci'
+ALTER TABLE docentes DROP COLUMN ci;
+-- 3. Eliminar columna 'telefono'
+ALTER TABLE docentes DROP COLUMN telefono;
+-- 4. Agregar columna 'nombre_completo_formateado'
+ALTER TABLE docentes ADD COLUMN nombre_completo_formateado VARCHAR(250) NOT NULL AFTER segundo_apellido;
+
+ALTER TABLE users
+MODIFY role ENUM('administrador', 'docente');
+
+
+
+
+-- INSERCIONES DE VALORES FIJOS EN LA BDD
+
+INSERT INTO buildings (name) 
+VALUES ('Facultad de Informática y Electrónica');
+
+INSERT INTO classrooms (building_id, number, capacity, has_projector, has_computers)
+VALUES 
+(1, 'T-1',   30, FALSE, FALSE),
+(1, 'T-2',   30, FALSE, FALSE),
+(1, 'T-3',   30, FALSE, FALSE),
+(1, 'T-4',   30, FALSE, FALSE),
+(1, 'T-5',   30, FALSE, FALSE),
+(1, 'T-6',   30, FALSE, FALSE),
+(1, 'T-7',   30, FALSE, FALSE),
+(1, 'T-103', 30, FALSE, FALSE),
+(1, 'T-105', 30, FALSE, FALSE),
+(1, 'T-106', 30, FALSE, FALSE),
+(1, 'T-107', 30, FALSE, FALSE),
+(1, 'T-108', 30, FALSE, FALSE),
+(1, 'T-109', 30, FALSE, FALSE),
+(1, 'T-110', 30, FALSE, FALSE),
+(1, 'T-111', 30, FALSE, FALSE),
+(1, 'T-202', 30, FALSE, FALSE),
+(1, 'T-203', 30, FALSE, FALSE),
+(1, 'T-204', 30, FALSE, FALSE),
+(1, 'T-205', 30, FALSE, FALSE),
+(1, 'T-206', 30, FALSE, FALSE),
+(1, 'T-208', 30, FALSE, FALSE),
+(1, 'T-209', 30, FALSE, FALSE);
+
+DELETE FROM schedules;
+DELETE FROM subjects;
+DELETE FROM gestiones;
+DELETE FROM docentes;
+
+ALTER TABLE schedules AUTO_INCREMENT = 1;
+ALTER TABLE subjects AUTO_INCREMENT = 1;
+ALTER TABLE gestiones AUTO_INCREMENT = 1;
+ALTER TABLE docentes AUTO_INCREMENT = 1;
+
+ALTER TABLE users
+DROP COLUMN phone,
+DROP COLUMN employee_id;
+
+ALTER TABLE users
+ADD COLUMN nombre VARCHAR(100) AFTER user_id,
+ADD COLUMN primer_apellido VARCHAR(100) AFTER nombre,
+ADD COLUMN segundo_apellido VARCHAR(100) AFTER primer_apellido;
+
+ALTER TABLE users
+DROP COLUMN name;
+
+ALTER TABLE schedules CHANGE user_id docente_id INT;
+
+ALTER TABLE schedules DROP FOREIGN KEY schedules_ibfk_3;
+
+ALTER TABLE schedules 
+ADD CONSTRAINT fk_docente_schedule 
+FOREIGN KEY (docente_id) REFERENCES docentes(docente_id);
+
+ALTER TABLE docentes
+ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+
+
+
+
+
+
