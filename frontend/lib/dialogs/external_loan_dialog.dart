@@ -1,9 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../../config/app_colors.dart';
-import '../models/external_loan_model.dart';
-import '../../providers/app_state.dart';
-import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../providers/app_state.dart';
 
 class ExternalLoanDialog extends StatefulWidget {
   const ExternalLoanDialog({super.key});
@@ -14,19 +14,99 @@ class ExternalLoanDialog extends StatefulWidget {
 
 class _ExternalLoanDialogState extends State<ExternalLoanDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _reasonController = TextEditingController();
-  final _idDocumentController = TextEditingController();
-  String _personType = 'cleaning';
-  String _selectedClassroom = 'A101';
+  final TextEditingController _nameController = TextEditingController();
+
+  String? _selectedClassroomId;
+  int? _associatedKeyId;
+  String? _personType = 'Personal de limpieza';
   DateTime _expectedReturnTime = DateTime.now().add(const Duration(hours: 2));
 
+  final List<String> _personTypes = [
+    'Personal de Mantenimiento',
+    'Personal de limpieza',
+    'Invitado',
+    'Otro'
+  ];
+
+  bool _isSubmitting = false;
+
   @override
-  void dispose() {
-    _nameController.dispose();
-    _reasonController.dispose();
-    _idDocumentController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    Provider.of<AppState>(context, listen: false).fetchClassrooms();
+  }
+
+  Future<void> _fetchKeyForClassroom(String classroomId) async {
+    try {
+      final res = await http.get(
+        Uri.parse('http://localhost:3000/api/keys?classroom_id=$classroomId'),
+      );
+
+      final data = json.decode(res.body);
+      if (data.isNotEmpty) {
+        setState(() {
+          _associatedKeyId = data[0]['key_id'];
+        });
+      } else {
+        setState(() {
+          _associatedKeyId = null;
+        });
+      }
+    } catch (e) {
+      print('[FLUTTER] Error al obtener llave: $e');
+    }
+  }
+
+  Future<void> _submitLoan() async {
+    if (!_formKey.currentState!.validate() ||
+        _associatedKeyId == null ||
+        _selectedClassroomId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content:
+                Text('Por favor, completa todos los campos correctamente.')),
+      );
+      return;
+    }
+
+    final userId =
+        Provider.of<AppState>(context, listen: false).currentUser?.id;
+    if (userId == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Usuario no autenticado')));
+      return;
+    }
+
+    final data = {
+      'person_name': _nameController.text,
+      'tipo_persona': _personType,
+      'classroom_id': int.parse(_selectedClassroomId!),
+      'key_id': _associatedKeyId,
+      'expected_return_time': _expectedReturnTime.toIso8601String(),
+      'registered_by': userId
+    };
+
+    setState(() => _isSubmitting = true);
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:3000/api/external-loans'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(data),
+      );
+
+      if (response.statusCode == 201) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Préstamo registrado con éxito')));
+      } else {
+        throw Exception('Error: ${response.body}');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error al enviar: $e')));
+    } finally {
+      setState(() => _isSubmitting = false);
+    }
   }
 
   @override
@@ -35,257 +115,140 @@ class _ExternalLoanDialogState extends State<ExternalLoanDialog> {
     final classrooms = appState.classrooms;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      insetPadding: EdgeInsets.all(24),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Nuevo Préstamo Externo',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.people_alt, color: Colors.white),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'Nuevo Préstamo Externo',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: _nameController,
+                  decoration:
+                      InputDecoration(labelText: 'Nombre de la persona'),
+                  validator: (value) => value == null || value.isEmpty
+                      ? 'Este campo es obligatorio'
+                      : null,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _personType,
+                  decoration: InputDecoration(labelText: 'Tipo de persona'),
+                  items: _personTypes.map((tipo) {
+                    return DropdownMenuItem(value: tipo, child: Text(tipo));
+                  }).toList(),
+                  onChanged: (value) => setState(() => _personType = value),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _selectedClassroomId,
+                  decoration: InputDecoration(labelText: 'Aula'),
+                  items: classrooms.map((classroom) {
+                    return DropdownMenuItem(
+                      value: classroom.id.toString(),
+                      child: Text(classroom.number),
+                    );
+                  }).toList(),
+                  onChanged: (value) async {
+                    setState(() => _selectedClassroomId = value);
+                    await _fetchKeyForClassroom(value!);
+                    if (_associatedKeyId == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text(
+                                'No hay llave disponible para esta aula.')),
+                      );
+                    }
+                  },
+                  validator: (value) =>
+                      value == null ? 'Selecciona un aula' : null,
+                ),
+                const SizedBox(height: 12),
+                Row(
                   children: [
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre de la Persona',
-                        hintText: 'Ingrese el nombre completo',
-                        prefixIcon:
-                            Icon(Icons.person, color: AppColors.primary),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor ingrese un nombre';
-                        }
-                        return null;
-                      },
+                    Expanded(
+                      child: Text(
+                          'Fecha devolución: ${DateFormat('yyyy-MM-dd').format(_expectedReturnTime)}'),
                     ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Tipo de Personal',
-                        prefixIcon:
-                            Icon(Icons.category, color: AppColors.primary),
-                      ),
-                      value: _personType,
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'cleaning',
-                          child: Text('Personal de Limpieza'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'maintenance',
-                          child: Text('Personal de Mantenimiento'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'guest',
-                          child: Text('Invitado'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'other',
-                          child: Text('Otro'),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            _personType = value;
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Aula',
-                        prefixIcon:
-                            Icon(Icons.meeting_room, color: AppColors.primary),
-                      ),
-                      value: _selectedClassroom,
-                      items: classrooms.map((classroom) {
-                        return DropdownMenuItem(
-                          value: classroom.number,
-                          child: Text(
-                              '${classroom.number} (${classroom.buildingId})'),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            _selectedClassroom = value;
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _reasonController,
-                      decoration: const InputDecoration(
-                        labelText: 'Motivo',
-                        hintText: 'Ingrese el motivo del préstamo',
-                        prefixIcon:
-                            Icon(Icons.description, color: AppColors.primary),
-                      ),
-                      maxLines: 3,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor ingrese un motivo';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    InkWell(
-                      onTap: () async {
-                        final DateTime? picked = await showDatePicker(
+                    TextButton(
+                      onPressed: () async {
+                        final pickedDate = await showDatePicker(
                           context: context,
                           initialDate: _expectedReturnTime,
                           firstDate: DateTime.now(),
-                          lastDate:
-                              DateTime.now().add(const Duration(days: 30)),
+                          lastDate: DateTime.now().add(Duration(days: 30)),
                         );
-                        if (picked != null) {
-                          final TimeOfDay? timePicked = await showTimePicker(
-                            context: context,
-                            initialTime:
-                                TimeOfDay.fromDateTime(_expectedReturnTime),
-                          );
-                          if (timePicked != null) {
-                            setState(() {
-                              _expectedReturnTime = DateTime(
-                                picked.year,
-                                picked.month,
-                                picked.day,
-                                timePicked.hour,
-                                timePicked.minute,
-                              );
-                            });
-                          }
+                        if (pickedDate != null) {
+                          setState(() {
+                            _expectedReturnTime = DateTime(
+                              pickedDate.year,
+                              pickedDate.month,
+                              pickedDate.day,
+                              _expectedReturnTime.hour,
+                              _expectedReturnTime.minute,
+                            );
+                          });
                         }
                       },
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'Hora Estimada de Devolución',
-                          prefixIcon:
-                              Icon(Icons.event, color: AppColors.primary),
-                        ),
-                        child: Text(
-                          DateFormat('dd/MM/yyyy HH:mm')
-                              .format(_expectedReturnTime),
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _idDocumentController,
-                      decoration: const InputDecoration(
-                        labelText: 'Documento de Identidad',
-                        hintText: 'Ingrese el número de documento',
-                        prefixIcon: Icon(Icons.badge, color: AppColors.primary),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.camera_alt),
-                      label: const Text('Tomar Foto de ID'),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                                'Función de cámara no implementada en el prototipo'),
-                          ),
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        OutlinedButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                          child: const Text('Cancelar'),
-                        ),
-                        const SizedBox(width: 16),
-                        ElevatedButton(
-                          onPressed: () {
-                            if (_formKey.currentState!.validate()) {
-                              final loan = ExternalLoanModel(
-                                id: 0, // Se asignará en el método createExternalLoan
-                                personName: _nameController.text,
-                                personType: _personType,
-                                classroomNumber: _selectedClassroom,
-                                reason: _reasonController.text,
-                                loanTime: DateTime.now(),
-                                expectedReturnTime: _expectedReturnTime,
-                                status: 'borrowed',
-                                registeredBy: '',
-                                idDocument:
-                                    _idDocumentController.text.isNotEmpty
-                                        ? _idDocumentController.text
-                                        : null,
-                              );
-
-                              appState.createExternalLoan(loan);
-                              Navigator.of(context).pop();
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                      'Préstamo externo registrado correctamente'),
-                                  backgroundColor: AppColors.success,
-                                ),
-                              );
-                            }
-                          },
-                          child: const Text('Registrar Préstamo'),
-                        ),
-                      ],
+                      child: Text('Cambiar Fecha'),
                     ),
                   ],
                 ),
-              ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                          'Hora devolución: ${DateFormat('HH:mm').format(_expectedReturnTime)}'),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        final pickedTime = await showTimePicker(
+                          context: context,
+                          initialTime:
+                              TimeOfDay.fromDateTime(_expectedReturnTime),
+                        );
+                        if (pickedTime != null) {
+                          setState(() {
+                            _expectedReturnTime = DateTime(
+                              _expectedReturnTime.year,
+                              _expectedReturnTime.month,
+                              _expectedReturnTime.day,
+                              pickedTime.hour,
+                              pickedTime.minute,
+                            );
+                          });
+                        }
+                      },
+                      child: Text('Cambiar Hora'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Cancelar')),
+                    const SizedBox(width: 16),
+                    ElevatedButton(
+                      onPressed: _isSubmitting ? null : _submitLoan,
+                      child: Text('Guardar'),
+                    ),
+                  ],
+                )
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

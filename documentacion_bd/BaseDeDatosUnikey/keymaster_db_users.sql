@@ -34,7 +34,7 @@ CREATE TABLE `users` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -43,7 +43,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,NULL,NULL,NULL,'LuisSant@est.univalle.edu','$2b$10$78IoHJFi/.uZElOq5plX..NYROy8SjTueoOX8zkeYZ0OkcjxWEE62','administrador','2025-04-23 16:59:34','2025-04-23 16:59:34'),(2,'Pedro','Galvez','Pereira','pedrito@gmail.com','$2b$10$aUlSVA6erUDA8BulA7URB.1hFtYEY8aLkqa/Mf0sE61OH95sryVpC','administrador','2025-04-28 02:41:52','2025-04-28 02:41:52'),(3,'Marlene','Aiza','Choque','marlene@gmail.com','$2b$10$gZ5o6R2lbc8mITXR0K7Ehu7EKNuMrsdysL63JVw1Jpq8EVP.wFvnC','docente','2025-04-28 04:13:00','2025-04-28 04:13:00'),(4,'Joel','Alanez','dURAN','joel@gmail.com','$2b$10$tmqj8xRkpUc.qkyiKHUogu6wIOGDQz9hSKbFRpMM5U.u.XtX/M2pO','docente','2025-04-28 04:25:05','2025-04-28 04:25:05'),(5,'luis','claros','TORRICO','luis@gmail.com','$2b$10$l9WzYl6P0NxpFjE3mV3nfujuYVUdcJVntIwgMd5FkNbQsUncIvWDC','docente','2025-04-28 05:17:36','2025-04-28 05:17:36'),(6,'Edson','flores','CONDORI','edson@gmail.com','$2b$10$M5JdMFYoNFDcNYXypZwhle3KDNrJC9un1Gllio6x.IlhfZ2/0XO1q','docente','2025-04-28 05:19:48','2025-04-28 05:19:48'),(7,'Saul Carlos','Peredo','','saul@gmail.com','$2b$10$4BPET9goXtICghO.j74bU.qK7/BQF2E/Ct34wFCCvqfVXI2zU0dtO','administrador','2025-04-28 06:08:59','2025-04-28 06:08:59'),(8,'jose','gordillo','pizarro','jose@gmail.com','$2b$10$/UgLz.7OT7h6/.w4KhcdV.sZw7iEsverysV.1QZJHmOFsEYq7/8pO','docente','2025-04-28 06:09:54','2025-04-28 06:09:54');
+INSERT INTO `users` VALUES (1,NULL,NULL,NULL,'LuisSant@est.univalle.edu','$2b$10$78IoHJFi/.uZElOq5plX..NYROy8SjTueoOX8zkeYZ0OkcjxWEE62','administrador','2025-04-23 16:59:34','2025-04-23 16:59:34'),(2,'Pedro','Galvez','Pereira','pedrito@gmail.com','$2b$10$aUlSVA6erUDA8BulA7URB.1hFtYEY8aLkqa/Mf0sE61OH95sryVpC','administrador','2025-04-28 02:41:52','2025-04-28 02:41:52'),(3,'Marlene','Aiza','Choque','marlene@gmail.com','$2b$10$gZ5o6R2lbc8mITXR0K7Ehu7EKNuMrsdysL63JVw1Jpq8EVP.wFvnC','docente','2025-04-28 04:13:00','2025-04-28 04:13:00'),(4,'Joel','Alanez','dURAN','joel@gmail.com','$2b$10$tmqj8xRkpUc.qkyiKHUogu6wIOGDQz9hSKbFRpMM5U.u.XtX/M2pO','docente','2025-04-28 04:25:05','2025-04-28 04:25:05'),(5,'luis','claros','TORRICO','luis@gmail.com','$2b$10$l9WzYl6P0NxpFjE3mV3nfujuYVUdcJVntIwgMd5FkNbQsUncIvWDC','docente','2025-04-28 05:17:36','2025-04-28 05:17:36'),(6,'Edson','flores','CONDORI','edson@gmail.com','$2b$10$M5JdMFYoNFDcNYXypZwhle3KDNrJC9un1Gllio6x.IlhfZ2/0XO1q','docente','2025-04-28 05:19:48','2025-04-28 05:19:48'),(7,'Saul Carlos','Peredo','','saul@gmail.com','$2b$10$4BPET9goXtICghO.j74bU.qK7/BQF2E/Ct34wFCCvqfVXI2zU0dtO','administrador','2025-04-28 06:08:59','2025-04-28 06:08:59'),(8,'jose','gordillo','pizarro','jose@gmail.com','$2b$10$/UgLz.7OT7h6/.w4KhcdV.sZw7iEsverysV.1QZJHmOFsEYq7/8pO','docente','2025-04-28 06:09:54','2025-04-28 06:09:54'),(9,'chris','flowers','herrera','adminsxd@est.univalle.edu','$2b$10$efJJ/pkRlF2v7AXmYzTGSemcCP67NryuGlnfKd2w2IrEg8rEj5QeC','administrador','2025-05-04 18:45:41','2025-05-04 18:45:41');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -56,4 +56,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-04-28  3:08:26
+-- Dump completed on 2025-05-16  9:53:33

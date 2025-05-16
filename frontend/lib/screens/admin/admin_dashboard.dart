@@ -6,10 +6,11 @@ import '../../providers/app_state.dart';
 import '../login/login_screen.dart';
 import 'admin_classrooms_tab.dart';
 import 'admin_requests_tab.dart';
-import 'admin_users_tab.dart';
 import 'admin_settings_tab.dart';
 import '../../dialogs/external_loan_dialog.dart';
 import '../../widgets/cards/external_loan_card.dart';
+import '../../models/external_loan_model.dart';
+import 'admin_classroom_map_tab.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);
@@ -31,6 +32,15 @@ class _AdminDashboardState extends State<AdminDashboard>
       setState(() {
         _selectedIndex = _tabController.index;
       });
+    });
+
+   
+    Future.delayed(Duration.zero, () {
+      final appState = Provider.of<AppState>(context, listen: false);
+      appState.fetchClassrooms(); 
+      appState.fetchKeyRequests(); 
+      appState.fetchAllSchedules(); 
+
     });
   }
 
@@ -77,7 +87,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                   bottom: PreferredSize(
                     preferredSize: const Size.fromHeight(60),
                     child: Container(
-                      color: AppColors.primary, // Para que siga igual el color
+                      color: AppColors.primary, 
                       child: TabBar(
                         controller: _tabController,
                         indicatorColor: Colors.white,
@@ -85,7 +95,9 @@ class _AdminDashboardState extends State<AdminDashboard>
                           Tab(icon: Icon(Icons.key), text: 'Solicitudes'),
                           Tab(icon: Icon(Icons.people_alt), text: 'Préstamos'),
                           Tab(icon: Icon(Icons.meeting_room), text: 'Aulas'),
-                          Tab(icon: Icon(Icons.people), text: 'Usuarios'),
+                          Tab(
+                              icon: Icon(Icons.map),
+                              text: 'Mapa Aulas'), // NUEVO
                           Tab(icon: Icon(Icons.settings), text: 'Ajustes'),
                         ],
                       ),
@@ -113,7 +125,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                 AdminRequestsTab(),
                 ExternalLoansTab(),
                 AdminClassroomsTab(),
-                AdminUsersTab(),
+                AdminClassroomMapTab(),
                 AdminSettingsTab(),
               ],
             ),
@@ -136,112 +148,124 @@ class _AdminDashboardState extends State<AdminDashboard>
   }
 }
 
-class ExternalLoansTab extends StatelessWidget {
+class ExternalLoansTab extends StatefulWidget {
   const ExternalLoansTab({Key? key}) : super(key: key);
 
   @override
+  State<ExternalLoansTab> createState() => _ExternalLoansTabState();
+}
+
+class _ExternalLoansTabState extends State<ExternalLoansTab> {
+  static late BuildContext _staticContext;
+  static late void Function(void Function()) _setState;
+  static List<ExternalLoanModel> _visibleLoans = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _staticContext = context;
+    _setState = setState;
+    final appState = Provider.of<AppState>(context, listen: false);
+    appState.fetchExternalLoans().then((_) {
+      setState(() {
+        _visibleLoans = List.from(appState.externalLoans);
+      });
+    });
+  }
+
+  static Future<void> openLoanDialog(BuildContext context) async {
+    await showDialog(
+      context: context,
+      builder: (context) => const ExternalLoanDialog(),
+    );
+
+    final appState = Provider.of<AppState>(_staticContext, listen: false);
+    await appState.fetchExternalLoans();
+
+    _setState(() {
+      _visibleLoans = List.from(appState.externalLoans);
+    });
+  }
+
+  void _removeLoanFromUI(int loanId) {
+    Future.delayed(const Duration(seconds: 3), () {
+      setState(() {
+        _visibleLoans.removeWhere((loan) => loan.id == loanId);
+      });
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Consumer<AppState>(
-      builder: (context, appState, child) {
-        final externalLoans = appState.externalLoans;
+    final classrooms = Provider.of<AppState>(context).classrooms;
 
-        if (externalLoans.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.people_alt, size: 80, color: Colors.grey),
-                const SizedBox(height: 16),
-                const Text(
-                  'No hay préstamos externos',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Los préstamos a personal externo aparecerán aquí',
-                  style: TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.add),
-                  label: const Text('Nuevo Préstamo Externo'),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => const ExternalLoanDialog(),
-                    );
-                  },
-                ),
-              ],
+    if (_visibleLoans.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.people_alt, size: 80, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text('No hay préstamos externos',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            const Text(
+              'Los préstamos a personal externo aparecerán aquí',
+              style: TextStyle(color: Colors.grey),
             ),
-          );
-        }
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Nuevo Préstamo Externo'),
+              onPressed: () => openLoanDialog(context),
+            ),
+          ],
+        ),
+      );
+    }
 
-        final activeBorrows =
-            externalLoans.where((loan) => loan.status == 'borrowed').toList();
-        final overdueLoans =
-            externalLoans.where((loan) => loan.status == 'overdue').toList();
-        final returnedLoans =
-            externalLoans.where((loan) => loan.status == 'returned').toList();
+    final activeBorrows =
+        _visibleLoans.where((loan) => loan.estado == 'prestada').toList();
+    final overdueLoans =
+        _visibleLoans.where((loan) => loan.estado == 'vencida').toList();
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Préstamos Externos',
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Préstamos Externos',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          if (activeBorrows.isNotEmpty) ...[
+            const Text('Activos',
                 style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (activeBorrows.isNotEmpty) ...[
-                const Text(
-                  'Activos',
-                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ...activeBorrows.map((loan) => ExternalLoanCard(loan: loan)),
-                const SizedBox(height: 16),
-              ],
-              if (overdueLoans.isNotEmpty) ...[
-                const Text(
-                  'Vencidos',
-                  style: TextStyle(
+                    color: AppColors.primary)),
+            const SizedBox(height: 8),
+            ...activeBorrows.map((loan) => ExternalLoanCard(
+                  loan: loan,
+                  classrooms: classrooms,
+                  onMarkedReturned: () => _removeLoanFromUI(loan.id),
+                )),
+            const SizedBox(height: 16),
+          ],
+          if (overdueLoans.isNotEmpty) ...[
+            const Text('Vencidos',
+                style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.error,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ...overdueLoans.map((loan) => ExternalLoanCard(loan: loan)),
-                const SizedBox(height: 16),
-              ],
-              if (returnedLoans.isNotEmpty) ...[
-                const Text(
-                  'Devueltos',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.success,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ...returnedLoans.map((loan) => ExternalLoanCard(loan: loan)),
-              ],
-            ],
-          ),
-        );
-      },
+                    color: AppColors.error)),
+            const SizedBox(height: 8),
+            ...overdueLoans.map((loan) => ExternalLoanCard(
+                  loan: loan,
+                  classrooms: classrooms,
+                )),
+            const SizedBox(height: 16),
+          ],
+        ],
+      ),
     );
   }
 }

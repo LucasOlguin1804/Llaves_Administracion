@@ -57,7 +57,7 @@ class _AdminClassroomsTabState extends State<AdminClassroomsTab> {
             children: [
               Expanded(
                 child: Text(
-                  'Aulas Disponibles',
+                  'Registro de Aulas',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

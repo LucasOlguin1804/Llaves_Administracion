@@ -7,7 +7,7 @@ const bcrypt = require('bcryptjs');
 function normalizarNombreCompleto(nombre, primer_apellido, segundo_apellido) {
   return `${primer_apellido} ${segundo_apellido || ''} ${nombre}`
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // ← esta regex SÍ elimina acentos bien
+    .replace(/[\u0300-\u036f]/g, '') 
     .toUpperCase()
     .replace(/\s+/g, ' ') 
     .trim();

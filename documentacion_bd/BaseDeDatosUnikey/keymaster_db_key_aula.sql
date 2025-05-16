@@ -25,16 +25,14 @@ DROP TABLE IF EXISTS `key_aula`;
 CREATE TABLE `key_aula` (
   `key_id` int NOT NULL AUTO_INCREMENT,
   `classroom_id` int NOT NULL,
-  `codigo_clave` varchar(50) NOT NULL,
   `estado` enum('disponible','prestada','perdida','mantenimiento') DEFAULT 'disponible',
   `has_data_control` tinyint(1) DEFAULT '0',
-  `notes` text,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`key_id`),
   KEY `classroom_id` (`classroom_id`),
   CONSTRAINT `key_aula_ibfk_1` FOREIGN KEY (`classroom_id`) REFERENCES `classrooms` (`classroom_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -43,6 +41,7 @@ CREATE TABLE `key_aula` (
 
 LOCK TABLES `key_aula` WRITE;
 /*!40000 ALTER TABLE `key_aula` DISABLE KEYS */;
+INSERT INTO `key_aula` VALUES (1,1,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(2,2,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(3,3,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(4,4,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(5,5,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(6,6,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(7,7,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(8,8,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(9,9,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(10,10,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(11,11,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(12,12,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(13,13,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(14,14,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(15,15,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(16,16,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(17,17,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(18,18,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(19,19,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(20,20,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(21,21,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28'),(22,22,'disponible',0,'2025-05-13 17:17:28','2025-05-13 17:17:28');
 /*!40000 ALTER TABLE `key_aula` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -55,4 +54,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-04-28  3:08:26
+-- Dump completed on 2025-05-16  9:53:34

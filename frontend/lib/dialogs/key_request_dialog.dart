@@ -132,18 +132,21 @@ class _KeyRequestDialogState extends State<KeyRequestDialog> {
                     ),
                     const SizedBox(width: 16),
                     ElevatedButton(
-                      onPressed: () {
-                        appState.requestKey(
-                            widget.scheduleId, _needsDataControl);
-                        Navigator.of(context).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                                'Solicitud de llave enviada correctamente'),
-                            backgroundColor: AppColors.success,
-                          ),
-                        );
-                      },
+                     onPressed: () {
+  appState.requestKey(
+    widget.scheduleId,
+    _needsDataControl,
+    notes: _additionalNotes ?? '',
+  );
+  Navigator.of(context).pop();
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('Solicitud de llave enviada correctamente'),
+      backgroundColor: AppColors.success,
+    ),
+  );
+}
+,
                       child: const Text('Enviar Solicitud'),
                     ),
                   ],

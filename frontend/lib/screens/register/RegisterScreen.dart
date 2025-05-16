@@ -19,7 +19,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  String? _selectedRole; // administrador o docente
+  String? _selectedRole;
   bool _isLoading = false;
   bool _showPassword = false;
   bool _showConfirmPassword = false;

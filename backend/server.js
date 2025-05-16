@@ -12,8 +12,9 @@ const loginRoute = require('./routes/login');
 const classroomRoutes = require('./routes/classroom');
 const importExcelRoute = require('./routes/importExcel');
 const scheduleRoutes = require('./routes/schedules');
-
-
+const keysRoute = require('./routes/keys');
+const externalLoanRoute = require('./routes/externalLoan');
+const keyRequestsRoute = require('./routes/key-requests');
 
 
 // Usa rutas
@@ -22,6 +23,10 @@ app.use('/login', loginRoute);
 app.use('/api', classroomRoutes);
 app.use('/api', importExcelRoute);
 app.use('/api/schedules', scheduleRoutes);
+app.use('/api', keysRoute);
+app.use('/api', externalLoanRoute);
+app.use('/api/key-requests', keyRequestsRoute);
+
 
 
 // Inicia servidor y acepta conexiones externas

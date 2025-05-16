@@ -66,7 +66,7 @@ class _AdminSettingsTabState extends State<AdminSettingsTab> {
                   value: false,
                   activeColor: AppColors.primary,
                   onChanged: (value) {
-                    // Implementar cambio de tema
+                    
                   },
                 ),
               ],
@@ -93,7 +93,7 @@ class _AdminSettingsTabState extends State<AdminSettingsTab> {
                   value: false,
                   activeColor: AppColors.primary,
                   onChanged: (value) {
-                    // Implementar cambio
+                    
                   },
                 ),
                 const Divider(),
@@ -105,7 +105,7 @@ class _AdminSettingsTabState extends State<AdminSettingsTab> {
                   value: true,
                   activeColor: AppColors.primary,
                   onChanged: (value) {
-                    // Implementar cambio
+                    
                   },
                 ),
                 const Divider(),
@@ -115,7 +115,7 @@ class _AdminSettingsTabState extends State<AdminSettingsTab> {
                   subtitle: const Text('Ver registro histórico de entregas'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    // Implementar vista de historial
+                    
                   },
                 ),
               ],

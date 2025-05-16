@@ -294,7 +294,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 alignment: Alignment.centerRight,
                                 child: TextButton(
                                   onPressed: () {
-                                    // Implementar recuperación de contraseña
+                                   
                                   },
                                   child: const Text('¿Olvidó su contraseña?'),
                                 ),
